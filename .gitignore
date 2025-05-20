@@ -1,3 +1,6 @@
 # Ignora tudo que tem na pasta shared exept o arquivo .gitkeep
 shared/*
 !shared/.gitkeep
+
+# Ignora pycaches
+__pycache__/

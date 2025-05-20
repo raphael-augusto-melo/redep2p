@@ -142,6 +142,11 @@ class Peer:
         for holder in holders:
             host, port_str = holder.split(':')
             port = int(port_str)
+
+            if holder == f'{socket.gethostbyname(socket.gethostname())}:{self.my_port}':
+                print(f'[PEER] {holder} é o proprio peer, não pode baixar de si mesmo')
+                continue
+
             try:
                 with socket.create_connection((host, port), timeout=4) as s:
                     # envia o pedido GET

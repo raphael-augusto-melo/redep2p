@@ -134,10 +134,12 @@ class Peer:
         if not holders:
             print('[PEER] arquivo não encontrado na rede')
             return
-
+        
+        # escolhe aleatoriamente um holder (Temporário)	
+        random.shuffle(holders)
+        
         # 2) tenta cada holder até conseguir baixar
         for holder in holders:
-            holder = random.shuffle(holders)[0]  # aleatório
             host, port_str = holder.split(':')
             port = int(port_str)
             try:

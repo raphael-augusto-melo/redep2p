@@ -1,0 +1,9 @@
+ENCODING = 'utf-8'
+DELIM = b'\n' # Delimita o fim da mensagem
+
+QUERY = "QUERY"
+QUERY_REPLY = "QUERY_REPLY"
+HEARTBEAT = "HEARTBEAT"
+GET = "GET"
+FILE_INFO = "FILE_INFO"
+ERROR       = "ERROR"

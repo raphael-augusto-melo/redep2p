@@ -1,5 +1,5 @@
 # p2p/edge/edge.py
-import socket, threading, time
+import socket, threading, time, os
 from collections import defaultdict
 from proto import send_json, recv_json
 
@@ -16,19 +16,63 @@ class EdgeServer:
         self.peer_checksums = {}
 
     def start(self):
+        self._clear_catalog(path='catalog.txt')
         srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         srv.bind(self.addr)
         srv.listen()
+        srv.settimeout(1.0)   # timeout de 1 segundo no accept()
         print(f'[EDGE] ouvindo em {self.addr}')
         threading.Thread(target=self._janitor, daemon=True).start()
 
-        while True:
-            conn, cli = srv.accept()
-            threading.Thread(
-                target=self._handle_client,
-                args=(conn, cli),
-                daemon=True
-            ).start()
+        try:
+            while True:
+                try:
+                    conn, cli = srv.accept()
+                except socket.timeout:
+                    continue     # volta pro topo do loop e permite capturar Ctrl+C
+                threading.Thread(
+                    target=self._handle_client,
+                    args=(conn, cli),
+                    daemon=True
+                ).start()
+        except (KeyboardInterrupt, SystemExit):
+            print('\n[EDGE] desligando, limpando catálogo...')
+            self._clear_catalog(path='catalog.txt')
+        finally:
+            srv.close()
+        
+    def _write_catalog(self, path='catalog.txt'):
+        """
+        Gera/atualiza um arquivo texto com todos os arquivos
+        indexados, agrupados por extensão, sem duplicatas.
+        """
+        # agrupa por extensão
+        groups = defaultdict(set)
+        for fname in self.files_index:
+            ext = os.path.splitext(fname)[1].lstrip('.').upper()  # 'txt', 'png' → 'TXT', 'PNG'
+            if not ext:
+                ext = 'SEM_EXTENSÃO'
+            groups[ext].add(fname)
+
+        # escreve em disco
+        with open(path, 'w', encoding='utf-8') as f:
+            for ext in sorted(groups):
+                files = sorted(groups[ext])
+                if not files:
+                    continue
+                f.write('---------------------------\n')
+                f.write(f'{ext}\n\n')
+                for name in files:
+                    f.write(f'{name}\n')
+                f.write('\n')
+
+    def _clear_catalog(self, path='catalog.txt'):
+        """Zera o índice em memória e apaga o arquivo no disco."""
+        with CATALOG_LOCK:
+            self.files_index.clear()
+            # sobrescreve o catalog.txt para vazio
+            open(path, 'w', encoding='utf-8').close()
+
 
     def _handle_client(self, conn, cli):
         while True:
@@ -46,35 +90,32 @@ class EdgeServer:
         conn.close()
 
     def _handle_heartbeat(self, msg, cli):
-        """
-        msg: dicionário com 'files' e 'port'
-        cli: tupla (ip, porta TCP do heartbeat)
-        """
         host = cli[0]
-        download_port = msg.get('port')           # porto real do servidor de download
-        peer_str = f'{host}:{download_port}'      # agora corretíssimo
-
-        files = msg.get('files', [])
+        download_port = msg.get('port')
+        peer_str = f'{host}:{download_port}'
+        files = set(msg.get('files', []))
         checksums = msg.get('checksums', {})
+
         with CATALOG_LOCK:
-            # primeiro, limpa entradas antigas para este peer em qualquer porto
-            for fset in self.files_index.values():
-                # se havia registros antigos com IP igual, mas porta errada, removemos
-                fset = {p for p in fset if not p.startswith(f'{host}:')}
-                fset.discard(peer_str)
-                # armazena os checksums recebidos
-                self.peer_checksums[peer_str] = checksums
-            # adiciona arquivos atuais
+            # 1) Remove esse peer de todos os arquivos que ele tinha antes...
+            for fname, holders in list(self.files_index.items()):
+                if peer_str in holders and fname not in files:
+                    holders.discard(peer_str)
+                    if not holders:
+                        del self.files_index[fname]
+
+            # 2) Adiciona de volta só os arquivos anunciados agora
             for fname in files:
                 self.files_index[fname].add(peer_str)
-            # atualiza timestamp com a chave correta
+
+            # 3) Atualiza timestamps e checksums
             self.peers_last_seen[peer_str] = time.time()
+            self.peer_checksums[peer_str] = checksums
 
         print(f'[EDGE] heartbeat {peer_str} → {len(files)} arquivos')
-        if checksums:
-           print(f'[EDGE] hashes de {peer_str}:')
-           for fname, h in checksums.items():
-                print(f'    - {fname}: {h}')
+
+        # Se quiser atualizar o catálogo em disco sempre que mudar algo
+        self._write_catalog(path='catalog.txt')
 
     def _handle_query(self, msg, conn):
         fname = msg.get('filename')
@@ -87,13 +128,26 @@ class EdgeServer:
         while True:
             time.sleep(self.timeout // 3)
             cutoff = time.time() - self.timeout
+            changed = False
             with CATALOG_LOCK:
                 dead = [p for p, t in self.peers_last_seen.items() if t < cutoff]
                 for peer in dead:
                     print(f'[EDGE] removendo {peer} (inativo)')
+                    # remove do last_seen
                     del self.peers_last_seen[peer]
-                    for fset in self.files_index.values():
-                        fset.discard(peer)
+                    # varre todos os arquivos indexados
+                    for fname, holders in list(self.files_index.items()):
+                        if peer in holders:
+                            holders.discard(peer)
+                            changed = True
+                            # se não sobrou mais ninguém com este arquivo, remove a chave
+                            if not holders:
+                                del self.files_index[fname]
+                # se algo mudou (removemos pelo menos um peer de algum arquivo),
+                # atualiza o catalog.txt
+                if changed:
+                    self._write_catalog(path='catalog.txt')
+
     
     def _cli_loop(self):
         while True:

@@ -75,8 +75,8 @@ Para cada máquina (ou terminal) que atuará como peer:
 1. Crie uma pasta de compartilhamento:
 
    ```bash
-   mkdir -p shared/alice       # exemplo: peer “Alice”
-   echo "Olá, mundo!" > shared/alice/ola.txt # Linux
+   mkdir -p shared/<pasta>      # exemplo: peer “Alice”
+   echo "Olá, mundo!" > shared/<pasta>/ola.txt # Linux
    ```
 
 2. Rode o peer apontando para o Edge:

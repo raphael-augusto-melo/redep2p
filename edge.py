@@ -41,7 +41,7 @@ class EdgeServer:
             self._clear_catalog(path='catalog.txt')
         finally:
             srv.close()
-        
+
     def _write_catalog(self, path='catalog.txt'):
         """
         Gera/atualiza um arquivo texto com todos os arquivos
@@ -73,7 +73,6 @@ class EdgeServer:
             self.files_index.clear()
             # sobrescreve o catalog.txt para vazio
             open(path, 'w', encoding='utf-8').close()
-
 
     def _handle_client(self, conn, cli):
         while True:

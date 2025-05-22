@@ -198,7 +198,7 @@ class Peer:
                 continue
 
         print('[PEER] nenhum holder conseguiu fornecer o arquivo.')
-    
+
     # ---------------- catalogo de arquivos ---------------- #
     def catalogo(self):
         """requisita o catálogo do edge e imprime os arquivos disponíveis."""
@@ -222,8 +222,6 @@ class Peer:
 
         except OSError as e:
             print('[PEER] falha ao obter catálogo do edge:', e)
-
-        
 
 if __name__ == '__main__':
     import argparse, textwrap

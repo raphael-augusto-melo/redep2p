@@ -27,7 +27,7 @@ class Peer:
         threading.Thread(target=self._download_server, daemon=True).start()
         # 2) loop keep-alive
         threading.Thread(target=self._keep_alive, daemon=True).start()
-        print('[PEER] pronto; digite comandos (get <arquivo> ou quit)')
+        print('[PEER] pronto; digite comandos (get <arquivo>, catalogo, quit)')
         self._cli_loop()
 
     # ---------------- servidor de download ---------------- #
@@ -109,8 +109,11 @@ class Peer:
                 break
             elif cmd[0] == 'get' and len(cmd) == 2:
                 self.download(cmd[1])
+            elif cmd[0] == 'catalogo' and len(cmd) == 1:
+                self.catalogo()
+
             else:
-                print('comando: get <arquivo> | quit')
+                print('comando: get <arquivo> | catalogo | quit')
 
     # ---------------- download de arquivo ---------------- #
     def download(self, fname):
@@ -195,6 +198,32 @@ class Peer:
                 continue
 
         print('[PEER] nenhum holder conseguiu fornecer o arquivo.')
+    
+    # ---------------- catalogo de arquivos ---------------- #
+    def catalogo(self):
+        """requisita o catálogo do edge e imprime os arquivos disponíveis."""
+        try:
+            # 1) conecta no edge
+            with socket.create_connection(self.edge_addr, timeout=4) as sock:
+                # 2) manda o pedido de catálogo
+                send_json(sock, {"type": "CATALOG"})
+                
+                # 3) recebe todo o texto do catalog.txt
+                buffer = b''
+                while True:
+                    chunk = sock.recv(4096)
+                    if not chunk:
+                        break
+                    buffer += chunk
+
+            # 4) decodifica e imprime
+            text = buffer.decode(ENCODING)
+            print('[PEER] catálogo da rede:\n' + text)
+
+        except OSError as e:
+            print('[PEER] falha ao obter catálogo do edge:', e)
+
+        
 
 if __name__ == '__main__':
     import argparse, textwrap

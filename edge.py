@@ -5,6 +5,7 @@ from proto import send_json, recv_json
 
 HEARTBEAT = "HEARTBEAT"
 QUERY = "QUERY"
+CATALOG = "CATALOG"
 CATALOG_LOCK = threading.Lock()
 
 class EdgeServer:
@@ -86,6 +87,16 @@ class EdgeServer:
                 self._handle_heartbeat(msg, cli)
             elif msg_type == QUERY:
                 self._handle_query(msg, conn)
+            elif msg_type == CATALOG:
+                # envia o catálogo em texto bruto
+                with CATALOG_LOCK:
+                    try:
+                        with open('catalog.txt', 'r', encoding='utf-8') as f:
+                            for line in f:
+                                conn.send(line.encode('utf-8'))
+                    except FileNotFoundError:
+                        pass
+                break  # fecha conexão após envio
 
         conn.close()
 
@@ -148,7 +159,6 @@ class EdgeServer:
                 if changed:
                     self._write_catalog(path='catalog.txt')
 
-    
     def _cli_loop(self):
         while True:
             cmd = input('edge> ').strip().split()
@@ -159,7 +169,6 @@ class EdgeServer:
                         print(f'{peer} → {f}: {h}')
                 else:
                     print('Uso: show_hashes ip:port')
-
 
 if __name__ == '__main__':
     EdgeServer().start()

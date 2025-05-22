@@ -33,7 +33,7 @@ pip install tqdm
 
 ---
 
-## 2. Estrutura de pastas
+## 2. Estrutura de arquivos
 
 ```
 redep2p/
@@ -41,7 +41,7 @@ redep2p/
 ├─ proto.py         ← send_json, recv_json
 ├─ edge.py          ← servidor de catálogo
 ├─ peer.py          ← cliente/servidor de arquivos
-└─ README.md                ← este arquivo
+└─ README.md        ← este arquivo
 ```
 
 ---
@@ -83,9 +83,9 @@ Para cada máquina (ou terminal) que atuará como peer:
 
    ```bash
    python -m peer \
-     --edge SEU_IP 5000 \
-     --folder shared/alice \
-     --port 600X
+     --edge <IP_DO_EDGE> 5000 \
+     --folder shared/<pasta> \
+     --port <600X>
    ```
 
 3. Você verá:
@@ -117,10 +117,10 @@ Para cada máquina (ou terminal) que atuará como peer:
 ## 5. Fluxo de uso típico
 
 1. **Inicie** o EdgeServer.
-2. **Inicie** Peer A (Alice) — ela anuncia seus arquivos.
-3. **Inicie** Peer B (Bob) — ele anuncia os seus.
+2. **Inicie** Peer A  — ele anuncia seus arquivos.
+3. **Inicie** Peer B  — ele anuncia os seus.
 4. No Peer B, execute `catalogo` para ver o que há na rede.
-5. No Peer B, execute `get nome_do_arquivo` para baixar de Alice.
+5. No Peer B, execute `get nome_do_arquivo` para baixar do Peer A.
 6. Veja a barra de progresso e mensagem de “download ok”.
 
 ---
@@ -132,7 +132,7 @@ Para cada máquina (ou terminal) que atuará como peer:
 * **Logs**: use `tee` para salvar logs, ex.
 
   ```bash
-  python -m peer ... | tee logs/peer_alice.txt
+  python -m peer ... | tee logs/peer_a.txt
   ```
 
 ---

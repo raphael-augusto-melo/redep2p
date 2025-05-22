@@ -49,7 +49,7 @@ class EdgeServer:
         srv.listen()
         # começa a escutar conexões que chegarem
 
-        srv.settimeout(1.0)
+        srv.settimeout(30.0)
         # faz o accept() não travar para sempre: ele “desperta” a cada 1s
 
         print(f'[EDGE] ouvindo em {self.addr}')

@@ -44,6 +44,17 @@ class Peer:
         # mensagem inicial para o usuário
         print('[PEER] pronto; digite comandos (get <arquivo>, catalogo, quit)')
         self._cli_loop()  # entra no loop de interação com o usuário
+    
+    # ---------------- localizador de IP ---------------- #
+    def get_local_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # conecta a um endereço externo sem enviar nada
+            s.connect(('8.8.8.8', 80))  # Google DNS
+            ip = s.getsockname()[0]
+        finally:
+            s.close()
+        return ip
 
     # ---------------- servidor de download ---------------- #
     def _download_server(self):
@@ -177,7 +188,8 @@ class Peer:
             port = int(port_str)
 
             # não tenta baixar de si mesmo
-            if holder == f'{socket.gethostbyname(socket.gethostname())}:{self.my_port}':
+            # O if abaixo está arrumado para o ceub, foda do ceub deixe: if holder == f'{socket.gethostbyname(socket.gethostname())}:{self.my_port}': e apague a função get_local_ip()
+            if holder == f'{self.get_local_ip()}:{self.my_port}':
                 print(f'[PEER] {holder} é o proprio peer, não pode baixar de si mesmo')
                 continue
 

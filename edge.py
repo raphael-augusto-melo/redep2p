@@ -8,7 +8,7 @@ QUERY = "QUERY"
 CATALOG_LOCK = threading.Lock()
 
 class EdgeServer:
-    def __init__(self, host='0.0.0.0', port=5000, timeout=90):
+    def __init__(self, host='0.0.0.0', port=5000, timeout=60):
         self.addr = (host, port)
         self.timeout = timeout
         self.files_index = defaultdict(set)      # fname -> {peer_addr_str}

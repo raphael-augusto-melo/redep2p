@@ -13,7 +13,7 @@ BUF = 64 * 1024
 
 class Peer:
     def __init__(self, edge_host, edge_port,
-                 folder='shared', my_port=6000, hb_interval=30):
+                 folder='shared', my_port=6000, hb_interval=15):
         self.edge_addr = (edge_host, edge_port)
         self.folder = pathlib.Path(folder)
         self.folder.mkdir(exist_ok=True)
